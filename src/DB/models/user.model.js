@@ -11,14 +11,14 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
       minLength: 3,
-      maxLength: 5,
+      maxLength: 25,
       trim: true,
     },
     lastName: {
       type: String,
       required: true,
       minLength: 3,
-      maxLength: 5,
+      maxLength: 25,
       trim: true,
     },
     email: {
@@ -29,7 +29,9 @@ const userSchema = new mongoose.Schema(
     },
     password: {
       type: String,
-      required: true,
+      required: function () {
+        return this.provider == ProviderEnum.system ? true : false;
+      },
       minLength: 6,
       trim: true,
     },
@@ -38,12 +40,6 @@ const userSchema = new mongoose.Schema(
       enum: Object.values(GenderEnum),
       default: GenderEnum.male,
     },
-    profilePicture: String,
-    phone: {
-      type: String,
-      required: true,
-    },
-    confirmed: Boolean,
     provider: {
       type: String,
       enum: Object.values(ProviderEnum),
@@ -54,6 +50,9 @@ const userSchema = new mongoose.Schema(
       enum: Object.values(RoleEnum),
       default: RoleEnum.user,
     },
+    profilePicture: String,
+    phone: String,
+    confirmed: Boolean,
   },
   {
     timestamps: true,
@@ -68,7 +67,7 @@ userSchema
     return this.firstName + " " + this.lastName;
   })
   .set(function (value) {
-    const [firstName, lastName] = value.split(" ");
+    const [firstName, lastName] = value?.split(" ") || [];
     this.set({
       firstName,
       lastName,

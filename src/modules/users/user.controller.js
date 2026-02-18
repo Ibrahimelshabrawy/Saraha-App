@@ -1,11 +1,19 @@
 import {Router} from "express";
 import * as US from "./user.services.js";
-import {authentication} from "../../common/middleware/Auth/authentication.js";
+import {authentication} from "../../common/middleware/Auth/authentication.middleware.js";
 // import {authorization} from "../../common/middleware/Auth/authorization.js";
 import {RoleEnum} from "../../common/enum/user.enum.js";
+import {authorization} from "../../common/middleware/Auth/authorization.middleware.js";
 
 const userRouter = Router();
 userRouter.post("/signup", US.signUp);
+userRouter.post("/signup/gmail", US.signUpWithGmail);
 userRouter.post("/signin", US.signIn);
-userRouter.get("/profile", authentication, US.getProfile);
+userRouter.get(
+  "/profile",
+  authentication,
+  authorization([RoleEnum.admin]),
+  US.getProfile,
+);
+
 export default userRouter;

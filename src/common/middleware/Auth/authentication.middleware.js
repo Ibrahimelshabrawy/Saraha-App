@@ -1,3 +1,4 @@
+import {SECRET_KEY} from "../../../../config/config.service.js";
 import * as db_service from "../../../DB/db.services.js";
 import userModel from "../../../DB/models/user.model.js";
 import {VerifyToken} from "../../utils/jwt/token.service.js";
@@ -15,7 +16,7 @@ export const authentication = async (req, res, next) => {
     throw new Error("Invalid prefix");
   }
 
-  const verify = VerifyToken({token, secret_key: "ibrahim"});
+  const verify = VerifyToken({token, secret_key: SECRET_KEY});
   if (!verify || !verify?.id) {
     throw new Error("Invalid Token");
   }

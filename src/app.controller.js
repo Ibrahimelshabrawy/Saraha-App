@@ -1,10 +1,12 @@
 import express from "express";
 import checkConnection from "./DB/connectionDB.js";
 import userRouter from "./modules/users/user.controller.js";
+import cors from "cors";
 const app = express();
-const port = 3000;
+const port = process.env.PORT;
 
 const bootstrap = () => {
+  app.use(cors({origin: "*"}));
   app.use(express.json());
   app.get("/", (req, res) => res.send("Hello World!"));
   checkConnection();
