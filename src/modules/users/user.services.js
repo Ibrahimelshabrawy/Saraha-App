@@ -18,10 +18,10 @@ import {
 
 import {OAuth2Client} from "google-auth-library";
 import {SALT_ROUND, SECRET_KEY} from "../../../config/config.service.js";
-
 export const signUp = async (req, res, next) => {
   const {userName, email, cPassword, password, gender, provider, phone, role} =
     req.body;
+
   if (cPassword !== password) {
     throw new Error("Invalid Password", {cause: 400});
   }
@@ -43,7 +43,7 @@ export const signUp = async (req, res, next) => {
   });
   successResponse({
     res,
-    message: "Sign In Successfully Enjoy 🥳",
+    message: "Sign Up Successfully Enjoy 🥳",
     status: 200,
     data: user,
   });
