@@ -51,6 +51,7 @@ const userSchema = new mongoose.Schema(
       default: RoleEnum.user,
     },
     profilePicture: String,
+    coverPictures: [String],
     phone: String,
     confirmed: Boolean,
   },

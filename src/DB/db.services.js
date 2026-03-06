@@ -74,12 +74,15 @@ export const findOneAndUpdate = async ({
   model,
   filter = {},
   update = {},
+  select = "",
   options = {},
 } = {}) => {
-  let doc = model.updateOne(filter, update, {
-    new: true,
-    runValidators: true,
-    ...options,
-  });
+  let doc = model
+    .findOneAndUpdate(filter, update, {
+      new: true,
+      runValidators: true,
+      ...options,
+    })
+    .select(select);
   return await doc.exec();
 };
