@@ -16,13 +16,13 @@ export const signinSchema = {
 export const signUpSchema = {
   body: signinSchema.body
     .append({
-      userName: GeneralRules.userName.required(), // RegExp مش هتشتغل محتاجه
+      userName: GeneralRules.userName.required(),
       cPassword: joi.string().valid(joi.ref("password")).messages({
         "any.required": "Confirm Password is required",
       }),
       phone: GeneralRules.phone.required(),
-      role: GeneralRules.role.required(),
-      gender: GeneralRules.gender.required(),
+      role: GeneralRules.role,
+      gender: GeneralRules.gender,
       confirm: GeneralRules.confirm,
       profilePicture: GeneralRules.profilePicture,
     })
@@ -30,8 +30,11 @@ export const signUpSchema = {
     .messages({
       "any.required": "Body is required",
     }),
-  file: GeneralRules.file.required(),
-  files: joi.array().items(GeneralRules.file.required()),
+  // file: GeneralRules.file.required(),
+  files: joi.object({
+    attachments: joi.array().items(GeneralRules.file),
+    attachment: joi.array().items(GeneralRules.file),
+  }),
 };
 
 export const shareProfileSchema = {
@@ -42,7 +45,8 @@ export const updateProfileSchema = {
     .object({
       gender: GeneralRules.gender,
       phone: GeneralRules.phone,
-      userName: GeneralRules.userName,
+      firstName: GeneralRules.firstName,
+      lastName: GeneralRules.lastName,
     })
     .required()
     .messages({
@@ -66,4 +70,13 @@ export const updatePasswordSchema = {
         }),
     })
     .required(),
+};
+
+export const coverImagesSchema = {
+  files: joi.array().items(GeneralRules.file.required()).messages({
+    "array.base": "Please Send images",
+  }),
+};
+export const profileImageSchema = {
+  file: GeneralRules.file.required(),
 };

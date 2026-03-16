@@ -12,3 +12,8 @@ export const RoleEnum = {
   user: "user",
   admin: "admin",
 };
+
+export const LogoutEnum = {
+  all: "all",
+  only: "only",
+};

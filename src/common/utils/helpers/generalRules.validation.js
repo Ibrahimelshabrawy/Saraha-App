@@ -3,6 +3,9 @@ import {GenderEnum, RoleEnum} from "../../enum/user.enum.js";
 import {Types} from "mongoose";
 
 export const GeneralRules = {
+  firstName: joi.string().min(3),
+  lastName: joi.string().min(3),
+
   email: joi
     .string()
     .email({

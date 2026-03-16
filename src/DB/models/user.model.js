@@ -54,11 +54,12 @@ const userSchema = new mongoose.Schema(
     coverPictures: [String],
     phone: String,
     confirmed: Boolean,
+    changeCredential: Date,
   },
   {
     timestamps: true,
     strictQuery: true,
-    toJSON: {virtuals: true},
+    // toJSON: {virtuals: true},
   },
 );
 

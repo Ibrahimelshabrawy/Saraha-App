@@ -86,3 +86,11 @@ export const findOneAndUpdate = async ({
     .select(select);
   return await doc.exec();
 };
+
+export const deleteOne = async ({filter, model}) => {
+  return await model.deleteOne(filter || {});
+};
+
+export const deleteMany = async ({filter, model}) => {
+  return await model.deleteMany(filter || {});
+};

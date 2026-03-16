@@ -1,33 +1,41 @@
+import fs from "fs";
+import path from "path";
 import multer from "multer";
-import fs from "node:fs";
 
-export const multer_local = ({
-  custom_path = "General",
-  custom_types = [],
-} = {}) => {
-  const fullPath = `uploads/${custom_path}`;
-  if (!fs.existsSync(fullPath)) {
-    fs.mkdirSync(fullPath, {recursive: true});
-  }
-
+export const multer_local = ({custom_types = []} = {}) => {
   const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-      cb(null, fullPath);
+      let folderPath;
+
+      if (file.fieldname === "attachment") {
+        folderPath = path.join(process.cwd(), "uploads", "profilePics");
+      } else if (file.fieldname === "attachments") {
+        folderPath = path.join(process.cwd(), "uploads", "coverPics");
+      } else {
+        folderPath = path.join(process.cwd(), "uploads", "gallery");
+      }
+
+      if (!fs.existsSync(folderPath)) {
+        fs.mkdirSync(folderPath, {recursive: true});
+      }
+
+      cb(null, folderPath);
     },
+
     filename: function (req, file, cb) {
       const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-      cb(null, uniqueSuffix + "-" + file.originalname);
+      cb(null, uniqueSuffix + "-" + file.originalname.replaceAll(" ", "-"));
     },
   });
+
   function fileFilter(req, file, cb) {
     if (!custom_types.includes(file.mimetype)) {
-      return cb(new Error("inValid File Type", {cause: 400}));
+      return cb(new Error("Invalid File Type", {cause: 400}));
     }
     return cb(null, true);
   }
 
-  const upload = multer({storage, fileFilter});
-  return upload;
+  return multer({storage, fileFilter});
 };
 
 export const multer_host = (custom_types = []) => {

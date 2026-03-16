@@ -14,29 +14,40 @@ import {MulterEnum} from "../../common/enum/multer.enum.js";
 const userRouter = Router();
 userRouter.post(
   "/signup",
-  multer_local({custom_types: [...MulterEnum.image]}).single("attachment"),
+  multer_local({
+    custom_path: "userPictures",
+    custom_types: [...MulterEnum.image],
+  }).fields([
+    {name: "attachments", maxCount: 1},
+    {name: "attachment", maxCount: 1},
+  ]),
   validation(UV.signUpSchema),
   US.signUp,
 );
 userRouter.post("/signup/gmail", US.signUpWithGmail);
+
 userRouter.post("/signin", validation(UV.signinSchema), US.signIn);
+
 userRouter.get(
   "/profile",
   authentication,
   // authorization([RoleEnum.admin]),
   US.getProfile,
 );
+
 userRouter.get(
   "/share-profile/:id",
   validation(UV.shareProfileSchema),
   US.shareProfile,
 );
+
 userRouter.patch(
   "/update-profile/:id",
   authentication,
   validation(UV.updateProfileSchema),
   US.updateProfile,
 );
+
 userRouter.patch(
   "/update-password",
   authentication,
@@ -44,6 +55,37 @@ userRouter.patch(
   US.updatePassword,
 );
 
+userRouter.patch(
+  "/update-coverPics",
+  authentication,
+  multer_local({
+    custom_path: "coverPics",
+    custom_types: [...MulterEnum.image],
+  }).fields([{name: "attachments", maxCount: 2}]),
+  US.updateCoverPictures,
+);
+
+userRouter.patch(
+  "/upload-profilePicture",
+  authentication,
+  multer_local({
+    custom_path: "profilePics",
+    custom_types: [...MulterEnum.image],
+  }).single("attachment"),
+  US.uploadProfilePicture,
+);
+
+userRouter.delete(
+  "/delete-profilePicture",
+  authentication,
+  multer_local({
+    custom_path: "profilePics",
+    custom_types: [...MulterEnum.image],
+  }).single("attachment"),
+  US.deleteProfilePicture,
+);
+
 userRouter.get("/refreshToken", US.refreshToken);
+userRouter.get("/logout", authentication, US.logout);
 
 export default userRouter;
