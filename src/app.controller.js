@@ -3,6 +3,7 @@ import checkConnection from "./DB/connectionDB.js";
 import userRouter from "./modules/users/user.controller.js";
 import cors from "cors";
 import {redisConnection} from "./DB/redis/redis.db.js";
+import messageRouter from "./modules/messages/message.controller.js";
 const app = express();
 const port = process.env.PORT;
 
@@ -22,6 +23,8 @@ const bootstrap = async () => {
 
   // Routers
   app.use("/users", userRouter);
+  app.use("/messages", messageRouter);
+
   app.use("{/*demo}", (req, res, next) => {
     throw new Error("`The URL ${req.originalUrl} Is Not Found 😥`", {
       cause: 500,

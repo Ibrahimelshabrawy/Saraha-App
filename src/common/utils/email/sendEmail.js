@@ -26,4 +26,6 @@ export const sendEmail = async ({to, subject, html, attachments}) => {
   return info.accepted.length > 0 ? true : false;
 };
 
-// export const generateOtp = async(Math.floor(Math.random()));
+export const generateOtp = async () => {
+  return Math.floor(Math.random() * 900000 + 100000);
+};

@@ -55,6 +55,10 @@ const userSchema = new mongoose.Schema(
     phone: String,
     confirmed: Boolean,
     changeCredential: Date,
+    profileVisit: {
+      type: Number,
+      default: 0,
+    },
   },
   {
     timestamps: true,

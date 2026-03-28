@@ -41,6 +41,14 @@ userRouter.get(
   US.shareProfile,
 );
 
+userRouter.get(
+  "/visit-profile/:id",
+  authentication,
+  authorization([RoleEnum.admin]),
+  validation(UV.visitCountSchema),
+  US.getVisitCount,
+);
+
 userRouter.patch(
   "/update-profile/:id",
   authentication,
@@ -62,6 +70,7 @@ userRouter.patch(
     custom_path: "coverPics",
     custom_types: [...MulterEnum.image],
   }).fields([{name: "attachments", maxCount: 2}]),
+  validation(UV.coverImagesSchema),
   US.updateCoverPictures,
 );
 
@@ -72,6 +81,7 @@ userRouter.patch(
     custom_path: "profilePics",
     custom_types: [...MulterEnum.image],
   }).single("attachment"),
+  validation(UV.profileImageSchema),
   US.uploadProfilePicture,
 );
 
@@ -83,6 +93,34 @@ userRouter.delete(
     custom_types: [...MulterEnum.image],
   }).single("attachment"),
   US.deleteProfilePicture,
+);
+
+userRouter.delete("/delete-user", authentication, US.deleteByUser);
+
+userRouter.delete(
+  "/delete-user-ByAdmin/:id",
+  authentication,
+  authorization([RoleEnum.admin]),
+  validation(UV.deleteByAdminSchema),
+  US.deleteByAdmin,
+);
+userRouter.patch(
+  "/confirm-email",
+  validation(UV.confirmEmailSchema),
+  US.confirmEmail,
+);
+
+userRouter.post("/resend-otp", validation(UV.emailCheckSchema), US.resendOtp);
+userRouter.patch(
+  "/forget-password",
+  validation(UV.emailCheckSchema),
+  US.forgetPassword,
+);
+
+userRouter.patch(
+  "/reset-password",
+  validation(UV.resetPasswordSchema),
+  US.resetPassword,
 );
 
 userRouter.get("/refreshToken", US.refreshToken);

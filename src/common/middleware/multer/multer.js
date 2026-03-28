@@ -11,6 +11,8 @@ export const multer_local = ({custom_types = []} = {}) => {
         folderPath = path.join(process.cwd(), "uploads", "profilePics");
       } else if (file.fieldname === "attachments") {
         folderPath = path.join(process.cwd(), "uploads", "coverPics");
+      } else if (file.fieldname === "messagePhotos") {
+        folderPath = path.join(process.cwd(), "uploads", "messages");
       } else {
         folderPath = path.join(process.cwd(), "uploads", "gallery");
       }

@@ -36,7 +36,6 @@ export const signUpSchema = {
     attachment: joi.array().items(GeneralRules.file),
   }),
 };
-
 export const shareProfileSchema = {
   params: GeneralRules.id.required(),
 };
@@ -54,7 +53,6 @@ export const updateProfileSchema = {
     }),
   params: GeneralRules.id.required(),
 };
-
 export const updatePasswordSchema = {
   body: joi
     .object({
@@ -71,12 +69,65 @@ export const updatePasswordSchema = {
     })
     .required(),
 };
-
 export const coverImagesSchema = {
-  files: joi.array().items(GeneralRules.file.required()).messages({
-    "array.base": "Please Send images",
-  }),
+  files: joi
+    .object({
+      attachments: joi.array().items(GeneralRules.file).required(),
+    })
+    .required()
+    .messages({
+      "any.required": "Cover Image Is Required",
+    }),
 };
 export const profileImageSchema = {
-  file: GeneralRules.file.required(),
+  file: GeneralRules.file.required().messages({
+    "any.required": "Profile Image Is Required",
+  }),
+};
+export const visitCountSchema = {
+  params: GeneralRules.id.required(),
+};
+export const deleteByAdminSchema = {
+  params: GeneralRules.id.required(),
+};
+export const confirmEmailSchema = {
+  body: joi
+    .object({
+      email: GeneralRules.email.required(),
+      otp: joi
+        .string()
+        .regex(/^\d{6}$/)
+        .required()
+        .messages({
+          "string.pattern.base": "OTP Value Must 6 Digits",
+        }),
+    })
+    .required(),
+};
+
+export const emailCheckSchema = {
+  body: joi
+    .object({
+      email: GeneralRules.email.required(),
+    })
+    .required(),
+};
+
+export const resetPasswordSchema = {
+  body: signinSchema.body.append({
+    otp: joi
+      .string()
+      .regex(/^\d{6}$/)
+      .required()
+      .messages({
+        "string.pattern.base": "OTP Value Must 6 Digits",
+      }),
+    cPassword: joi
+      .string()
+      .valid(joi.ref("password"))
+      .messages({
+        "any.required": "Confirm Password is required",
+      })
+      .required(),
+  }),
 };

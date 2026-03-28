@@ -1,3 +1,4 @@
+import {EmailEnum} from "../../common/enum/email.enum.js";
 import {redisClient} from "./redis.db.js";
 // `revokeToken::${req.user._id}::${req.verify.jti}`;
 
@@ -7,6 +8,23 @@ export const revokeKey = ({userId, jti}) => {
 
 export const getKeyUserId = ({userId}) => {
   return `revokeToken::${userId}`;
+};
+
+export const getUserProfile = ({userId}) => {
+  return `profile::${userId}`;
+};
+
+export const otpKey = ({email, subject = EmailEnum.confirmEmail} = {}) => {
+  return `otp::${email}::${subject}`;
+};
+export const blockedOtpKey = ({
+  email,
+  subject = EmailEnum.confirmEmail,
+} = {}) => {
+  return `${otpKey({email, subject})}::Blocked`;
+};
+export const maxOtpKey = ({email, subject = EmailEnum.confirmEmail} = {}) => {
+  return `${otpKey({email, subject})}::max`;
 };
 
 export const set = async ({key, value, ttl = null} = {}) => {
@@ -86,4 +104,8 @@ export const ttl = async (key) => {
 
 export const keys = async (pattern) => {
   return await redisClient.keys(`${pattern}*`);
+};
+
+export const incr = async (key) => {
+  return await redisClient.incr(key);
 };

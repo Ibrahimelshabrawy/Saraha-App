@@ -1,8 +1,6 @@
 import {ACCESS_SECRET_KEY} from "../../../../config/config.service.js";
 import * as db_service from "../../../DB/db.services.js";
 import * as redis_service from "../../../DB/redis/redis.services.js";
-import revokeTokenModel from "../../../DB/models/revokeToken.model.js";
-// import revokeTokenModel from "../../../DB/models/revokeToken.model.js";
 import userModel from "../../../DB/models/user.model.js";
 import {VerifyToken} from "../../utils/jwt/token.service.js";
 import {decrypt} from "../../utils/Security/encryption.security.js";
