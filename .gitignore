@@ -2,3 +2,4 @@
 config/*.env
 /uploads
 email.html
+/saraha-production
