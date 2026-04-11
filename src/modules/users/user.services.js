@@ -1,8 +1,4 @@
-import {
-  LogoutEnum,
-  ProviderEnum,
-  RoleEnum,
-} from "../../common/enum/user.enum.js";
+import {LogoutEnum, ProviderEnum} from "../../common/enum/user.enum.js";
 import {successResponse} from "../../common/utils/response/success.response.js";
 import * as db_service from "../../DB/db.services.js";
 import * as redis_service from "../../DB/redis/redis.services.js";
@@ -30,16 +26,10 @@ import {
   WEB_CLIENT_ID,
 } from "../../../config/config.service.js";
 import {generateOtp, sendEmail} from "../../common/utils/email/sendEmail.js";
-import path from "path";
-import {
-  deleteFile,
-  deleteFiles,
-  moveFile,
-} from "../../common/utils/helpers/files.js";
 import {eventEmitter} from "../../common/utils/email/email.event.js";
 import {emailTemplate} from "../../common/utils/email/email.template.js";
 import {EmailEnum} from "../../common/enum/email.enum.js";
-// import cloudinary from "../../common/utils/cloudinary/cloudinary.js";
+import cloudinary from "../../common/utils/cloudinary/cloudinary.js";
 
 const sendEmailOtp = async ({email, subject}) => {
   const blockedTTL = await redis_service.ttl(
@@ -102,23 +92,39 @@ const sendEmailOtp = async ({email, subject}) => {
 export const signUp = async (req, res, next) => {
   const {userName, email, password, gender, phone, role} = req.body;
 
-  const pathsByField = Object.fromEntries(
-    Object.entries(req.files || {}).map(([field, files]) => [
-      field,
-      files.map((file) =>
-        path.relative(process.cwd(), file.path).replace(/\\/g, "/"),
-      ),
-    ]),
-  );
-
-  console.log(pathsByField);
-
   const userExist = await db_service.findOne({
     model: userModel,
     filter: {email},
   });
   if (userExist) {
     throw new Error("Email Already Exist", {cause: 409});
+  }
+
+  let profilePicture = null;
+  if (req.files?.attachment?.length) {
+    const profileImage = await cloudinary.uploader.upload(
+      req.files.attachment[0].path,
+      {
+        folder: "sarahaApp/profileImages",
+      },
+    );
+    profilePicture = {
+      secure_url: profileImage.secure_url,
+      public_id: profileImage.public_id,
+    };
+  }
+
+  let coverPictures = [];
+  if (req.files?.attachments?.length) {
+    for (const file of req.files.attachments) {
+      const result = await cloudinary.uploader.upload(file.path, {
+        folder: "sarahaApp/coverImages",
+      });
+      coverPictures.push({
+        secure_url: result.secure_url,
+        public_id: result.public_id,
+      });
+    }
   }
 
   const user = await db_service.create({
@@ -130,8 +136,9 @@ export const signUp = async (req, res, next) => {
       gender,
       phone: await encrypt(phone),
       role,
-      profilePicture: pathsByField?.attachment[0] || null,
-      coverPictures: pathsByField?.attachments || null,
+      profilePicture,
+      coverPictures,
+      deleteAfter: Date.now() + 24 * 60 * 60 * 1000,
     },
   });
 
@@ -159,7 +166,7 @@ export const signUp = async (req, res, next) => {
   successResponse({
     res,
     message: "Sign Up Successfully Enjoy 🥳",
-    status: 200,
+    status: 201,
     data: {user},
   });
 };
@@ -179,7 +186,7 @@ export const confirmEmail = async (req, res, next) => {
   const user = await db_service.findOneAndUpdate({
     model: userModel,
     filter: {email, confirmed: {$exists: false}, provider: ProviderEnum.system},
-    update: {confirmed: true},
+    update: {confirmed: true, deleteAfter: null},
   });
 
   if (!user) {
@@ -225,11 +232,43 @@ export const signIn = async (req, res, next) => {
     throw new Error("User Not Found Or Not Confirmed", {cause: 404});
   }
 
+  const loginAttemptsKey = await redis_service.get(
+    redis_service.loginFailAttempts({email}),
+  );
+  const attempts = loginAttemptsKey || 0;
+
+  if (attempts >= 5) {
+    throw new Error("Your Account Temporarily Banned For 5 Minutes ⌚", {
+      cause: 403,
+    });
+  }
+
   if (
     !(await compare_match({plainText: password, cipherText: user.password}))
   ) {
+    const updateAttempts = await redis_service.incr(
+      redis_service.loginFailAttempts({email}),
+    );
+    if (updateAttempts === 5) {
+      await redis_service.expire({
+        key: redis_service.loginFailAttempts({email}),
+        ttl: 60 * 5,
+      });
+    }
     throw new Error("Invalid Password", {cause: 400});
   }
+
+  if (user.twoStepVerification) {
+    await sendEmailOtp({email, subject: EmailEnum.loginConfimation});
+
+    return successResponse({
+      res,
+      message: "OTP Sent To Your Email Successfully 🥳🥳",
+      status: 200,
+    });
+  }
+
+  await redis_service.deleteKey(redis_service.loginFailAttempts({email}));
 
   const jwtid = randomUUID();
 
@@ -549,93 +588,126 @@ export const logout = async (req, res, next) => {
 };
 
 export const updateCoverPictures = async (req, res, next) => {
-  const pathsByField = Object.fromEntries(
-    Object.entries(req.files || {}).map(([field, files]) => [
-      field,
-      files.map((file) =>
-        path.relative(process.cwd(), file.path).replace(/\\/g, "/"),
-      ),
-    ]),
-  );
+  let coverImages = [];
+  const totalCoverPicturesLength =
+    req.files.attachments.length + req.user.coverPictures.length;
 
-  const newCoverPictures = pathsByField?.attachments || [];
-  const existingCoverPictures = req?.user?.coverPictures || [];
-
-  if (!newCoverPictures.length) {
-    throw new Error("Please Upload Cover Pictures", {cause: 400});
+  if (totalCoverPicturesLength !== 2) {
+    throw new Error("Total Cover Pictures (New + Old) Must Be Equal 2 ❗", {
+      cause: 400,
+    });
   }
 
-  if (existingCoverPictures.length + newCoverPictures.length !== 2) {
-    throw new Error("Total Cover Pictures Must Be Equal 2", {cause: 400});
+  for (const file of req.files.attachments) {
+    const result = await cloudinary.uploader.upload(file.path, {
+      folder: "sarahaApp/coverImages",
+    });
+    coverImages.push({
+      secure_url: result.secure_url,
+      public_id: result.public_id,
+    });
   }
-
-  const updateUser = await db_service.findOneAndUpdate({
+  const user = await db_service.findOneAndUpdate({
     model: userModel,
-    id: req.user._id,
-    update: {coverPictures: [...newCoverPictures, ...existingCoverPictures]},
+    filter: {_id: req.user._id},
+    update: {coverPictures: [...coverImages, ...req.user.coverPictures]},
+    options: {
+      lean: true,
+    },
   });
 
   successResponse({
     res,
     status: 200,
     message: "Cover Pictures Updated Successfully🥳🥳",
-    data: updateUser,
+    data: user,
   });
 };
 
 export const uploadProfilePicture = async (req, res, next) => {
-  const newUploadedPath = req.file?.path
-    ? path.relative(process.cwd(), req.file.path).replace(/\\/g, "/")
-    : null;
+  const folderBaseName = "sarahaApp";
+  if (req.user.profilePicture?.public_id) {
+    const public_id = req.user.profilePicture.public_id.split("/").pop();
+    folderBaseName = req.user.profilePicture.public_id.split("/")[0];
 
-  if (!newUploadedPath) {
-    throw new Error("Profile picture is required", {cause: 400});
+    const moveProfilePicture = await cloudinary.uploader.rename(
+      req.user.profilePicture.public_id,
+      `${folderBaseName}/gallery/${public_id}`,
+      {
+        overwrite: true,
+        resource_type: "image",
+      },
+    );
+
+    await cloudinary.api.update(moveProfilePicture.public_id, {
+      asset_folder: `${folderBaseName}/gallery`,
+    });
   }
 
-  if (req.user.profilePicture) {
-    moveFile({oldPath: req.user.profilePicture});
-  }
-
-  const updateUser = await db_service.findOneAndUpdate({
-    model: userModel,
-    filter: {_id: req.user._id},
-    update: {profilePicture: newUploadedPath},
-    select: "profilePicture",
+  const newProfilePicture = await cloudinary.uploader.upload(req.file.path, {
+    folder: `${folderBaseName}/profileImages`,
   });
-  successResponse({
-    res,
-    status: 200,
-    message: "Profile Picture Updated Successfully🥳🥳",
-    data: updateUser,
-  });
-};
-
-export const deleteProfilePicture = async (req, res, next) => {
-  const profilePicture = req.user.profilePicture;
 
   const user = await db_service.findOneAndUpdate({
     model: userModel,
     filter: {_id: req.user._id},
-    update: {profilePicture: null},
-    select: "profilePicture",
+    update: {
+      profilePicture: {
+        secure_url: newProfilePicture.secure_url,
+        public_id: newProfilePicture.public_id,
+      },
+    },
   });
-  deleteFile(profilePicture);
+
+  successResponse({
+    res,
+    status: 200,
+    message: "Profile Picture Updated Successfully🥳🥳",
+    data: user,
+  });
+};
+
+export const deleteProfilePicture = async (req, res, next) => {
+  if (!req.user.profilePicture.public_id) {
+    throw new Error("There Is No Profile Picture To Delete", {cause: 400});
+  }
+
+  const response = await cloudinary.uploader.destroy(
+    req.user.profilePicture.public_id,
+  );
+  if (response.result !== "ok" && response.result == "not found") {
+    throw new Error("Failed To Delete Image From Cloudinary", {cause: 500});
+  }
+
+  await db_service.findOneAndUpdate({
+    model: userModel,
+    filter: {_id: req.user._id},
+    update: {
+      profilePicture: {
+        secure_url: null,
+        public_id: null,
+      },
+    },
+  });
 
   successResponse({
     res,
     status: 200,
     message: "Profile Picture Deleted Successfully 🥳🥳",
-    data: user,
   });
 };
 
 export const deleteByUser = async (req, res, next) => {
+  for (const file of req.user.coverPictures) {
+    await cloudinary.uploader.destroy(file.public_id);
+  }
+
+  await cloudinary.uploader.destroy(req.user.profilePicture.public_id);
+
   await db_service.deleteOne({
     model: userModel,
     filter: {_id: req.user._id},
   });
-  deleteFile(req.user.profilePicture);
-  deleteFiles(req.user.coverPictures);
 
   successResponse({
     res,
@@ -651,12 +723,17 @@ export const deleteByAdmin = async (req, res, next) => {
     id,
   });
 
+  for (const file of user.coverPictures) {
+    await cloudinary.uploader.destroy(file.public_id);
+  }
+
+  await cloudinary.uploader.destroy(user.profilePicture.public_id);
+
   await db_service.deleteOne({
     model: userModel,
     filter: {_id: id},
   });
-  deleteFile(user.profilePicture);
-  deleteFiles(user.coverPictures);
+
   successResponse({
     res,
     status: 200,
@@ -664,15 +741,100 @@ export const deleteByAdmin = async (req, res, next) => {
   });
 };
 
-// Upload File
-// const cloud = await cloudinary.uploader.upload(req.file.path, {
-//   folder: "/users",
-// });
+export const enable_2fa = async (req, res, next) => {
+  if (req.user.twoStepVerification) {
+    throw new Error("Two Step Verification Is Already Enabled", {
+      cause: 400,
+    });
+  }
 
-// Delete File
-// const deleteCloud = await cloudinary.uploader.destroy(
-//   "users/wnbhplgqqmzejjqitoaf",
-// );
+  await sendEmailOtp({email: req.user.email, subject: EmailEnum.enable_2fa});
+  successResponse({
+    res,
+    status: 200,
+    message: "OTP Send Successfully 🥳🥳",
+  });
+};
 
-// Delete Folder
-// await cloudinary.api.delete_folder("folderPath")
+export const confirm_enable_2fa = async (req, res, next) => {
+  const {otp} = req.body;
+  const oldOTP = await redis_service.get(
+    redis_service.otpKey({
+      email: req.user.email,
+      subject: EmailEnum.enable_2fa,
+    }),
+  );
+
+  if (
+    !(await compare_match({
+      plainText: otp,
+      cipherText: oldOTP,
+    }))
+  ) {
+    throw new Error("This OTP Is Wrong, Please Enter Valid OTP ❗", {
+      cause: 403,
+    });
+  }
+  req.user.twoStepVerification = true;
+  await req.user.save();
+  await redis_service.deleteKey(
+    redis_service.otpKey({
+      email: req.user.email,
+      subject: EmailEnum.enable_2fa,
+    }),
+  );
+  successResponse({
+    res,
+    status: 200,
+    message: "2FA Enabled Successfully 🥳🥳",
+  });
+};
+
+export const loginConfimation = async (req, res, next) => {
+  const {email, otp} = req.body;
+
+  const user = await db_service.findOne({
+    model: userModel,
+    filter: {email},
+  });
+
+  const oldOtp = await redis_service.get(
+    redis_service.otpKey({email, subject: EmailEnum.loginConfimation}),
+  );
+
+  if (
+    !(await compare_match({
+      plainText: otp,
+      cipherText: oldOtp,
+    }))
+  ) {
+    throw new Error("This OTP Is Wrong, Please Enter Valid OTP ❗", {
+      cause: 403,
+    });
+  }
+
+  const access_token = GenerateToken({
+    payload: {_id: user._id},
+    secret_key: ACCESS_SECRET_KEY,
+    options: {
+      expiresIn: EXPIRES_IN,
+    },
+  });
+  const refresh_token = GenerateToken({
+    payload: {_id: user._id},
+    secret_key: REFRESH_SECRET_KEY,
+    options: {
+      expiresIn: "1y",
+    },
+  });
+
+  successResponse({
+    res,
+    message: "Sign In Successfully 🥳🥳",
+    status: 200,
+    data: {
+      access_token,
+      refresh_token,
+    },
+  });
+};

@@ -27,6 +27,14 @@ export const maxOtpKey = ({email, subject = EmailEnum.confirmEmail} = {}) => {
   return `${otpKey({email, subject})}::max`;
 };
 
+export const loginFailAttempts = ({email}) => {
+  return `Fail-Login::${email}`;
+};
+
+export const banAccount = ({email}) => {
+  return `${loginFailAttempts({email})}::Banned`;
+};
+
 export const set = async ({key, value, ttl = null} = {}) => {
   try {
     const data = typeof value === "string" ? value : JSON.stringify(value);

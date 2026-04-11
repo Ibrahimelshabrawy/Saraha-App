@@ -14,12 +14,9 @@ import {MulterEnum} from "../../common/enum/multer.enum.js";
 const userRouter = Router();
 userRouter.post(
   "/signup",
-  multer_local({
-    custom_path: "userPictures",
-    custom_types: [...MulterEnum.image],
-  }).fields([
-    {name: "attachments", maxCount: 1},
+  multer_host([...MulterEnum.image]).fields([
     {name: "attachment", maxCount: 1},
+    {name: "attachments", maxCount: 3},
   ]),
   validation(UV.signUpSchema),
   US.signUp,
@@ -66,10 +63,9 @@ userRouter.patch(
 userRouter.patch(
   "/update-coverPics",
   authentication,
-  multer_local({
-    custom_path: "coverPics",
-    custom_types: [...MulterEnum.image],
-  }).fields([{name: "attachments", maxCount: 2}]),
+  multer_host([...MulterEnum.image]).fields([
+    {name: "attachments", maxCount: 2},
+  ]),
   validation(UV.coverImagesSchema),
   US.updateCoverPictures,
 );
@@ -77,10 +73,7 @@ userRouter.patch(
 userRouter.patch(
   "/upload-profilePicture",
   authentication,
-  multer_local({
-    custom_path: "profilePics",
-    custom_types: [...MulterEnum.image],
-  }).single("attachment"),
+  multer_host([...MulterEnum.image]).single("attachment"),
   validation(UV.profileImageSchema),
   US.uploadProfilePicture,
 );
@@ -88,10 +81,7 @@ userRouter.patch(
 userRouter.delete(
   "/delete-profilePicture",
   authentication,
-  multer_local({
-    custom_path: "profilePics",
-    custom_types: [...MulterEnum.image],
-  }).single("attachment"),
+  multer_host([...MulterEnum.image]).single("attachment"),
   US.deleteProfilePicture,
 );
 
@@ -125,5 +115,18 @@ userRouter.patch(
 
 userRouter.get("/refreshToken", US.refreshToken);
 userRouter.get("/logout", authentication, US.logout);
+
+userRouter.post("/enable-2fa", authentication, US.enable_2fa);
+userRouter.post(
+  "/confirm-enable-2fa",
+  authentication,
+  validation(UV.confirm_enable_2faSchema),
+  US.confirm_enable_2fa,
+);
+userRouter.post(
+  "/login-confirmation",
+  validation(UV.confirmEmailSchema),
+  US.loginConfimation,
+);
 
 export default userRouter;

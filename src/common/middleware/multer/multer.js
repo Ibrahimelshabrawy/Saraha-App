@@ -2,26 +2,17 @@ import fs from "fs";
 import path from "path";
 import multer from "multer";
 
-export const multer_local = ({custom_types = []} = {}) => {
+export const multer_local = ({
+  custom_path = "General",
+  custom_types = [],
+} = {}) => {
+  const fullPath = `uploads/${custom_path}`;
   const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-      let folderPath;
-
-      if (file.fieldname === "attachment") {
-        folderPath = path.join(process.cwd(), "uploads", "profilePics");
-      } else if (file.fieldname === "attachments") {
-        folderPath = path.join(process.cwd(), "uploads", "coverPics");
-      } else if (file.fieldname === "messagePhotos") {
-        folderPath = path.join(process.cwd(), "uploads", "messages");
-      } else {
-        folderPath = path.join(process.cwd(), "uploads", "gallery");
+      if (!fs.existsSync(fullPath)) {
+        fs.mkdirSync(fullPath, {recursive: true});
       }
-
-      if (!fs.existsSync(folderPath)) {
-        fs.mkdirSync(folderPath, {recursive: true});
-      }
-
-      cb(null, folderPath);
+      cb(null, fullPath);
     },
 
     filename: function (req, file, cb) {
@@ -39,7 +30,6 @@ export const multer_local = ({custom_types = []} = {}) => {
 
   return multer({storage, fileFilter});
 };
-
 export const multer_host = (custom_types = []) => {
   const storage = multer.diskStorage({
     filename: function (req, file, cb) {

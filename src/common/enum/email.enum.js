@@ -1,4 +1,6 @@
 export const EmailEnum = {
-  confirmEmail: "confirmEmail",
-  forgetPassword: "forgetPassword",
+  confirmEmail: "Confirm Email",
+  forgetPassword: "Forget Password",
+  enable_2fa: "Enable-2FA",
+  loginConfimation: "Login Confimation",
 };

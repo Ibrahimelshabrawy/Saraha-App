@@ -131,3 +131,17 @@ export const resetPasswordSchema = {
       .required(),
   }),
 };
+
+export const confirm_enable_2faSchema = {
+  body: joi
+    .object({
+      otp: joi
+        .string()
+        .regex(/^\d{6}$/)
+        .required()
+        .messages({
+          "string.pattern.base": "OTP Value Must 6 Digits",
+        }),
+    })
+    .required(),
+};

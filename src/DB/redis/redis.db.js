@@ -8,8 +8,8 @@ export const redisClient = createClient({
 export const redisConnection = async () => {
   try {
     await redisClient.connect();
-    console.log("Conncetion To Redis Successfully");
+    console.log("Conncetion To Redis Successfully 🥳");
   } catch (error) {
-    console.log("Conncetion To Redis Failed", error);
+    console.log("Conncetion To Redis Failed ❗", error);
   }
 };

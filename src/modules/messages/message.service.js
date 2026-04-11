@@ -38,13 +38,10 @@ export const sendMessage = async (req, res, next) => {
 export const getMessage = async (req, res, next) => {
   const {messageId} = req.params;
 
-  console.log(messageId);
-
   const message = await db_service.findById({
     model: messageModel,
     id: messageId,
   });
-  console.log(message);
 
   if (!message) {
     throw new Error("message Not Found", {cause: 404});

@@ -50,14 +50,31 @@ const userSchema = new mongoose.Schema(
       enum: Object.values(RoleEnum),
       default: RoleEnum.user,
     },
-    profilePicture: String,
-    coverPictures: [String],
+    profilePicture: {
+      secure_url: {type: String, default: null},
+      public_id: {type: String, default: null},
+      _id: false,
+    },
+    coverPictures: [
+      {
+        secure_url: {type: String, default: null},
+        public_id: {type: String, default: null},
+        _id: false,
+      },
+    ],
     phone: String,
     confirmed: Boolean,
+    twoStepVerification: Boolean,
+
     changeCredential: Date,
     profileVisit: {
       type: Number,
       default: 0,
+    },
+
+    deleteAfter: {
+      type: Date,
+      expires: 0,
     },
   },
   {
