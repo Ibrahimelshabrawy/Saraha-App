@@ -7,7 +7,6 @@
 ![Cloudinary](https://img.shields.io/badge/Cloudinary-Media-blue)
 ![JWT](https://img.shields.io/badge/JWT-Authentication-orange)
 ![Production Ready](https://img.shields.io/badge/Status-Production--Ready-success)
-![License](https://img.shields.io/badge/License-ISC-blue)
 
 A production-ready anonymous messaging backend API built using Node.js, Express, MongoDB, Redis, and Cloudinary with secure authentication, OTP verification, 2FA support, Google OAuth login, caching system, and token revocation.
 
