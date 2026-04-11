@@ -22,3 +22,6 @@ export const EMAIL = process.env.EMAIL;
 export const PASSWORD = process.env.PASSWORD;
 export const EXPIRES_IN = process.env.EXPIRES_IN;
 export const WHITELIST = process.env.WHITELIST.split(",") || [];
+export const CLOUD_NAME = process.env.CLOUD_NAME;
+export const CLOUD_API_KEY = process.env.CLOUD_API_KEY;
+export const CLOUD_API_SECRET = process.env.CLOUD_API_SECRET;
