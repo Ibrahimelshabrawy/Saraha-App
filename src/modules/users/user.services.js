@@ -154,13 +154,13 @@ export const signUp = async (req, res, next) => {
     await redis_service.set({
       key: redis_service.otpKey({email, subject: EmailEnum.confirmEmail}),
       value: await Hash({plainText: `${otp}`}),
-      ttl: 60 * 2,
+      ttl: 60,
     });
 
     await redis_service.set({
       key: redis_service.maxOtpKey({email, subject: EmailEnum.confirmEmail}),
       value: 1,
-      ttl: 60 * 6,
+      ttl: 60 * 3,
     });
   });
   successResponse({
@@ -418,13 +418,6 @@ export const refreshToken = async (req, res, next) => {
   if (!user) {
     throw new Error("User Not Found", {cause: 404});
   }
-  const revokeToken = await db_service.findOne({
-    model: revokeTokenModel,
-    filter: {tokenId: verify.jti},
-  });
-  if (revokeToken) {
-    throw new Error("Invalid Revoke Token For This Device", {cause: 403});
-  }
   const access_token = GenerateToken({
     payload: {id: user._id},
     secret_key: ACCESS_SECRET_KEY,
@@ -625,7 +618,7 @@ export const updateCoverPictures = async (req, res, next) => {
 };
 
 export const uploadProfilePicture = async (req, res, next) => {
-  const folderBaseName = "sarahaApp";
+  let folderBaseName = "sarahaApp";
   if (req.user.profilePicture?.public_id) {
     const public_id = req.user.profilePicture.public_id.split("/").pop();
     folderBaseName = req.user.profilePicture.public_id.split("/")[0];
@@ -699,10 +692,13 @@ export const deleteProfilePicture = async (req, res, next) => {
 
 export const deleteByUser = async (req, res, next) => {
   for (const file of req.user.coverPictures) {
-    await cloudinary.uploader.destroy(file.public_id);
+    if (file?.public_id) {
+      await cloudinary.uploader.destroy(file.public_id);
+    }
   }
-
-  await cloudinary.uploader.destroy(req.user.profilePicture.public_id);
+  if (req.user.profilePicture?.public_id) {
+    await cloudinary.uploader.destroy(req.user.profilePicture.public_id);
+  }
 
   await db_service.deleteOne({
     model: userModel,
@@ -723,11 +719,17 @@ export const deleteByAdmin = async (req, res, next) => {
     id,
   });
 
-  for (const file of user.coverPictures) {
-    await cloudinary.uploader.destroy(file.public_id);
+  if (!user) {
+    throw new Error("User Not Exist ❗", {cause: 404});
   }
-
-  await cloudinary.uploader.destroy(user.profilePicture.public_id);
+  for (const file of user.coverPictures) {
+    if (file?.public_id) {
+      await cloudinary.uploader.destroy(file.public_id);
+    }
+  }
+  if (user.profilePicture?.public_id) {
+    await cloudinary.uploader.destroy(user.profilePicture.public_id);
+  }
 
   await db_service.deleteOne({
     model: userModel,
@@ -812,19 +814,22 @@ export const loginConfimation = async (req, res, next) => {
       cause: 403,
     });
   }
+  const jwtid = randomUUID();
 
   const access_token = GenerateToken({
-    payload: {_id: user._id},
+    payload: {id: user._id},
     secret_key: ACCESS_SECRET_KEY,
     options: {
       expiresIn: EXPIRES_IN,
+      jwtid,
     },
   });
   const refresh_token = GenerateToken({
-    payload: {_id: user._id},
+    payload: {id: user._id},
     secret_key: REFRESH_SECRET_KEY,
     options: {
       expiresIn: "1y",
+      jwtid,
     },
   });
 
